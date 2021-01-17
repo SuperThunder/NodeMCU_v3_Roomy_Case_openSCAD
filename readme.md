@@ -10,3 +10,8 @@ A spacious case for the NodeMCU v3 made in openSCAD. Has enough room to hold the
 
 I made this case so that I could use NodeMCU v3 boards that I had as part of a wifi MQTT temperature reporting system without desoldering the DuPont connectors. Using DuPont connectors requires a few centimetres of clearance from the PCB, and the temperature sensors need to be a good distance away from the board to avoid being heated, so the case is quite bulky.
 
+
+## Print instructions
+- Print the main case without support
+- Print the lid with supports (not strictly required but the snap fit triangles will droop a bit otherwise)
+- I printed on an Ender 3 with PLA at 0.28mm 60mm/s 20% infill and found the results acceptable
