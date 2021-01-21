@@ -77,6 +77,9 @@ translate([0, 0, 0]) union()
     //too fragile, snap off and make it hard to put the lid on
     //generate_holding_posts();
     
+    //TODO: make 2-3 'walls' sticking up from the lid to prevent the top of the sensor walls from being squeezed inwards and causing layer separation about the PCB
+    //the walls could then potentially taper inwards to hold in the board
+    
 }
 
 //6 1cm clips. 3 on each side
