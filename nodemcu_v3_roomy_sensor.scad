@@ -8,7 +8,7 @@ inner_width_param = 31.0;
 
 inner_height = 30;
 
-// 5mm to allow for RF shield and soldered headers. Used to hold up the board by the edges
+// 4mm to allow for RF shield and soldered headers. Used to hold up the board by the edges
 floor_to_pcb_margin = 4;
 pcb_wall_margin = 0.5; //margin from the wall to the PCB edge - does result in USB port being slightly recessed
 
@@ -20,7 +20,7 @@ inner_wall_thickness = 1.0;
 inner_wall_height = 8;
 
 //Height with margin for cable
-usb_height = 5.5;
+usb_height = 7.5;
 
 //Width with margin for cable
 usb_width = 12.5;
@@ -79,6 +79,10 @@ translate([0, 0, 0]) union()
         
         //vent holes
         generate_rectangular_vent_holes();
+        
+        //todo: inner snap fit holding plate holes/structure
+        //(a plate that will snap in place above the board to securely hold it in
+        //possibly better just to have long posts coming out of lid
         
         
     }

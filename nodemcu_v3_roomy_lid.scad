@@ -5,15 +5,30 @@ inner_width_param = 31.0;
 
 inner_height = 3;
 
-// 5mm to allow for RF shield and soldered headers. Used to hold up the board by the edges
-floor_to_pcb_margin = 4;
+
 pcb_wall_margin = 0.5; //margin from the wall to the PCB edge - does result in USB port being slightly recessed
+
+
+//Values used to get retaining posts to know where the board is and corner post protrusions are so we can avoid conflicting with them with our holding columns 
+// 4mm to allow for RF shield and soldered headers. Used to hold up the board by the edges
+floor_to_pcb_margin = 4;
+case_inner_height = 30;
+nodemcu_v3_pcb_thickness = 1.6;
+corner_post_protrusion_height = 4;
+corner_post_inner_radius = 1.4;
+corner_post_pcb_radius = 1.5; //M3 hole?
+//edge of protruding post from x wall
+corner_post_x_from_wall = 1.3;
+//edge of protruding post from y wall
+corner_post_y_from_wall = 1.3;
+
 
 bottom_thickness = 1.5;
 
 wall_thickness = 1.5;
 
-snap_offset_from_top = 4;
+snap_offset_from_top_nominal = 4;
+snap_offset_droop_margin = 0.1; //the snapfit triangles tend to sag, when printing, so make the post a little taller to account for this
 
 
 //CALCULATED VALUES
@@ -33,6 +48,8 @@ width_full = inner_width+wall_thickness*2;
 
 height_full = bottom_thickness+inner_height;
 
+//account for potential droop
+snap_offset_from_top = snap_offset_from_top_nominal + snap_offset_droop_margin;
 
 
 
@@ -56,6 +73,10 @@ translate([0, 0, 0]) union()
     //snapfit clips
     generate_snapfit_clips();
     
+    //holding posts/columns to hold board in place
+    //too fragile, snap off and make it hard to put the lid on
+    //generate_holding_posts();
+    
 }
 
 //6 1cm clips. 3 on each side
@@ -65,7 +86,7 @@ module generate_snapfit_clips()
     hole_width = 12; //needed so that clip can be centered in hole
     clip_width = 11.5;
     clip_triangle_base = 2;
-    clip_triangle_height = 2.5;
+    clip_triangle_height = 3.2;
     
     spacer_thickness = 1.0;
     
@@ -103,6 +124,46 @@ module generate_snapfit_clips()
         translate([clip_width, clip_triangle_height-spacer_thickness, riser_height-clip_triangle_base]) rotate([0, 0, 180]) prism(clip_width, clip_triangle_height, clip_triangle_base);
     }
 }
+
+//some long rectangular prisms that go down to board height to hold it in place
+module generate_holding_posts()
+{
+    post_width = 3;
+    post_length = 3;
+    post_height = (bottom_thickness + inner_height) + (case_inner_height - floor_to_pcb_margin - nodemcu_v3_pcb_thickness);
+    
+    //use similar system as for PCB hole ledge/post, except go diagonally inwards from them
+    x_offset = wall_thickness + corner_post_x_from_wall + 2*corner_post_pcb_radius + pcb_wall_margin;
+    
+    y_offset = corner_post_pcb_radius + wall_thickness + 3*corner_post_y_from_wall + pcb_wall_margin;
+    
+    x_cross = inner_length - 4*corner_post_x_from_wall - 2*corner_post_pcb_radius - 2*pcb_wall_margin;
+    
+    y_cross = inner_width - 6*corner_post_y_from_wall - 2*corner_post_pcb_radius - 2*pcb_wall_margin;
+    
+    
+    //note that right and left are swapped w.r.t. case because the lid will go on upside down to what is shown here
+    //bottom right
+    translate([x_offset, y_offset, 0]) generate_holding_post();
+    
+    //bottom left
+    translate([x_offset, y_offset+y_cross, 0]) generate_holding_post();
+    
+    //top right
+    translate([x_offset + x_cross, y_offset, 0]) generate_holding_post();
+ 
+    //top left
+    translate([x_offset + x_cross, y_offset + y_cross, 0]) generate_holding_post();
+    
+    
+   
+    module generate_holding_post()
+    {
+        //translated so they are centered like the corner posts
+        translate([-post_width/2, -post_length/2, 0]) cube([post_width, post_length, post_height]);
+    }
+}
+
 
 module generate_vent_holes()
 {
