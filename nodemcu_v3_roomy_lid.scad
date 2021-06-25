@@ -3,7 +3,7 @@ inner_length_param = 57.8;
 
 inner_width_param = 31.0;
 
-inner_height = 3;
+//inner_height = 3;
 
 
 pcb_wall_margin = 0.5; //margin from the wall to the PCB edge - does result in USB port being slightly recessed
@@ -23,12 +23,18 @@ corner_post_x_from_wall = 1.3;
 corner_post_y_from_wall = 1.3;
 
 
-bottom_thickness = 1.5;
+bottom_thickness = 1.6;
 
-wall_thickness = 1.5;
+wall_thickness = 2;
 
-snap_offset_from_top_nominal = 4;
-snap_offset_droop_margin = 0.1; //the snapfit triangles tend to sag, when printing, so make the post a little taller to account for this
+//snap_offset_from_top_nominal = 4;
+//snap_offset_droop_margin = 0.1; //the snapfit triangles tend to sag, when printing, so make the post a little taller to account for this
+
+
+//Values for snap fit mechanism
+triangle_mount_base = 3;
+triangle_mount_length = 14;
+triangle_mount_dist_from_top = 1;
 
 
 //CALCULATED VALUES
@@ -46,32 +52,76 @@ length_full = inner_length_full+wall_thickness*2;
 
 width_full = inner_width+wall_thickness*2;
 
-height_full = bottom_thickness+inner_height;
+//height_full = bottom_thickness+inner_height;
 
 //account for potential droop
-snap_offset_from_top = snap_offset_from_top_nominal + snap_offset_droop_margin;
+//snap_offset_from_top = snap_offset_from_top_nominal + snap_offset_droop_margin;
 
 
-
+module generate_snapfit_solids(count, length)
+{
+    interval = length_full / 2 / count;
+    
+    //left side
+    for(i = [0:count-1])
+    {
+        translate([2*i*interval + interval, width_full/2, 0]) snapfit_solid();
+    }
+    
+    module snapfit_solid()
+    {
+        //the total height of the mount
+        total_mount_height = triangle_mount_dist_from_top+triangle_mount_base;
+        
+        translate([0,-width_full/2+wall_thickness+triangle_mount_base, total_mount_height/2]) cube([length, triangle_mount_base*2, total_mount_height], center=true);
+        translate([0,-width_full/2+wall_thickness, triangle_mount_dist_from_top]) triangle_mount(triangle_mount_base, wall_thickness/2, length);
+    }
+    
+}
 
 //lid with clips
 //meant to be 6mm, but ended up as 3.8mm
 translate([0, 0, 0]) union()
 {
+    
+    
     //generate empty box with cutouts
     difference()
     {
-        cube([length_full, width_full, height_full], 0);
+        //cube([length_full, width_full, height_full], 0);
+        
+        //flat plate
+        cube([length_full, width_full, bottom_thickness], 0);
         
         // main cutout
-        translate([wall_thickness, wall_thickness, bottom_thickness]) cube([inner_length_full, inner_width, inner_height+1]);
+        //translate([wall_thickness, wall_thickness, bottom_thickness]) cube([inner_length_full, inner_width, inner_height+1]);
         
         //vent holes
         generate_vent_holes();
     }
     
+    translate([0,0,bottom_thickness]) generate_snapfit_solids(3, triangle_mount_length);
+    translate([0,width_full,bottom_thickness]) mirror([0,1,0]) generate_snapfit_solids(3, triangle_mount_length);
+    
+    
+            //translate([length_full/4,-width_full/2+triangle_mount_base*2, triangle_mount_dist_from_top/2+bottom_thickness/2+triangle_mount_base/2]) cube([triangle_mount_length, triangle_mount_base*2, triangle_mount_dist_from_top+triangle_mount_base], center=true);
+        //translate([length_full/4,-width_full/2+triangle_mount_base, triangle_mount_dist_from_top+bottom_thickness/2]) triangle_mount(triangle_mount_base, wall_thickness/2, triangle_mount_length);
+            
+        //bottom right triangle mount
+//        translate([-ir_case_length/4,-ir_case_full_width/2+triangle_mount_base*2, triangle_mount_dist_from_top/2+lid_thickness/2+triangle_mount_base/2]) cube([triangle_mount_length, triangle_mount_base*2, triangle_mount_dist_from_top+triangle_mount_base], center=true);
+//        translate([-ir_case_length/4,-ir_case_full_width/2+triangle_mount_base,triangle_mount_dist_from_top+lid_thickness/2]) triangle_mount(triangle_mount_base, wall_thickness/2, triangle_mount_length);
+//            
+//        //top left triangle mount
+//        translate([ir_case_length/4,ir_case_full_width/2-triangle_mount_base*2, triangle_mount_dist_from_top/2+lid_thickness/2+triangle_mount_base/2]) cube([triangle_mount_length, triangle_mount_base*2, triangle_mount_dist_from_top+triangle_mount_base], center=true);
+//        translate([ir_case_length/4,ir_case_full_width/2-triangle_mount_base,triangle_mount_dist_from_top+lid_thickness/2]) mirror([0,1,0]) triangle_mount(triangle_mount_base, wall_thickness/2, triangle_mount_length);
+//            
+//        //bottom left triangle mount
+//        translate([-ir_case_length/4,ir_case_full_width/2-triangle_mount_base*2, triangle_mount_dist_from_top/2+lid_thickness/2+triangle_mount_base/2]) cube([triangle_mount_length, triangle_mount_base*2, triangle_mount_dist_from_top+triangle_mount_base], center=true);
+//        translate([-ir_case_length/4,ir_case_full_width/2-triangle_mount_base,triangle_mount_dist_from_top+lid_thickness/2]) mirror([0,1,0]) triangle_mount(triangle_mount_base, wall_thickness/2, triangle_mount_length);
+    //}
+    
     //snapfit clips
-    generate_snapfit_clips();
+    //generate_snapfit_clips();
     
     //holding posts/columns to hold board in place
     //too fragile, snap off and make it hard to put the lid on
@@ -80,91 +130,6 @@ translate([0, 0, 0]) union()
     //TODO: make 2-3 'walls' sticking up from the lid to prevent the top of the sensor walls from being squeezed inwards and causing layer separation about the PCB
     //the walls could then potentially taper inwards to hold in the board
     
-}
-
-//6 1cm clips. 3 on each side
-//3.8mm from top to the top of the 2mm height triangle
-module generate_snapfit_clips()
-{
-    hole_width = 12; //needed so that clip can be centered in hole
-    clip_width = 11.5;
-    clip_triangle_base = 2;
-    clip_triangle_height = 3.2;
-    
-    spacer_thickness = 1.0;
-    
-    riser_thickness = 2;
-    riser_height = bottom_thickness + inner_height + snap_offset_from_top + clip_triangle_base;
-    
-    //put holes at 10, 45, 90%
-    //clip_y_offset = -1*hole_thickness/2;
-    base_x_offset = wall_thickness + 0.10*inner_length_full;
-    
-    triangle_z_offset = height_full + snap_offset_from_top;
-    
-    //along y axis
-    translate([(hole_width-clip_width)/2, 0, 0]) generate_snapfit_line();
-    //along far wall
-    //since we need the clips to face inwards, mirror along XZ axis through origin then translate
-    translate([(hole_width-clip_width)/2, width_full, 0]) mirror([0,1,0]) generate_snapfit_line();
-    
-    //generate a line of 3
-    module generate_snapfit_line()
-    {
-        translate([base_x_offset, 0, 0]) generate_snapfit_assembly(); 
-        translate([base_x_offset + inner_length_full*0.35, 0, 0]) generate_snapfit_assembly();
-        translate([base_x_offset + inner_length_full*0.7, 0, 0]) generate_snapfit_assembly();
-    }
-    
-    //generate a single snapfit
-    module generate_snapfit_assembly()
-    {
-        //spacer
-        translate([0, -spacer_thickness, 0]) cube([clip_width, spacer_thickness+0.1, bottom_thickness+inner_height]);
-        //riser
-        translate([0, -spacer_thickness-riser_thickness, 0]) cube([clip_width, riser_thickness+0.1, riser_height]);
-        //clip
-        translate([clip_width, clip_triangle_height-spacer_thickness, riser_height-clip_triangle_base]) rotate([0, 0, 180]) prism(clip_width, clip_triangle_height, clip_triangle_base);
-    }
-}
-
-//some long rectangular prisms that go down to board height to hold it in place
-module generate_holding_posts()
-{
-    post_width = 3;
-    post_length = 3;
-    post_height = (bottom_thickness + inner_height) + (case_inner_height - floor_to_pcb_margin - nodemcu_v3_pcb_thickness);
-    
-    //use similar system as for PCB hole ledge/post, except go diagonally inwards from them
-    x_offset = wall_thickness + corner_post_x_from_wall + 2*corner_post_pcb_radius + pcb_wall_margin;
-    
-    y_offset = corner_post_pcb_radius + wall_thickness + 3*corner_post_y_from_wall + pcb_wall_margin;
-    
-    x_cross = inner_length - 4*corner_post_x_from_wall - 2*corner_post_pcb_radius - 2*pcb_wall_margin;
-    
-    y_cross = inner_width - 6*corner_post_y_from_wall - 2*corner_post_pcb_radius - 2*pcb_wall_margin;
-    
-    
-    //note that right and left are swapped w.r.t. case because the lid will go on upside down to what is shown here
-    //bottom right
-    translate([x_offset, y_offset, 0]) generate_holding_post();
-    
-    //bottom left
-    translate([x_offset, y_offset+y_cross, 0]) generate_holding_post();
-    
-    //top right
-    translate([x_offset + x_cross, y_offset, 0]) generate_holding_post();
- 
-    //top left
-    translate([x_offset + x_cross, y_offset + y_cross, 0]) generate_holding_post();
-    
-    
-   
-    module generate_holding_post()
-    {
-        //translated so they are centered like the corner posts
-        translate([-post_width/2, -post_length/2, 0]) cube([post_width, post_length, post_height]);
-    }
 }
 
 
@@ -206,3 +171,27 @@ module prism(l, w, h){
            );
   
    }
+   
+//from https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron
+//makes 3D triangles
+module prism_isos(l, w, h){
+   polyhedron(
+           points=[[0,0,0], [l,0,0], [l,w,0], [0,w,0], [0,w/2,h], [l,w/2,h]],
+           faces=[[0,1,2,3],[5,4,3,2],[0,4,5,1],[0,3,4],[5,2,1]]
+           );
+  
+}
+
+module triangle_mount(base, height, length)
+{
+    translate([-length/2,0,base/2]) rotate([90,0,0]) union(){
+        //triangle portion
+        //rotate([90,0,-90]) 
+        translate([0,-base/2,0]) prism_isos(length,base,height);
+        
+        //rectangular support
+        //rotate([0,90,0])
+        //translate([-length/2,0,base]) 
+        translate([length/2,0,-base/2]) cube([length,base,base], center=true);
+    }
+}

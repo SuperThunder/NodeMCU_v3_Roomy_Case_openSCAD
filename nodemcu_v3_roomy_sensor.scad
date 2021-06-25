@@ -12,12 +12,12 @@ inner_height = 30;
 floor_to_pcb_margin = 4;
 pcb_wall_margin = 0.5; //margin from the wall to the PCB edge - does result in USB port being slightly recessed
 
-bottom_thickness = 1.5;
+bottom_thickness = 2.0;
 
-wall_thickness = 1.5;
+wall_thickness = 2.0;
 
-inner_wall_thickness = 1.0;
-inner_wall_height = 8;
+inner_wall_thickness = 1.6;
+inner_wall_height = 10;
 
 //Height with margin for cable
 usb_height = 7.5;
@@ -39,10 +39,16 @@ corner_post_y_from_wall = 1.3;
 
 
 //Snapfit hole values
-snapfit_hole_width = 12;
-snapfit_hole_thickness = 6;
-snapfit_hole_height = 3;
-snapfit_hole_offset = 4; //4mm from top
+//snapfit_hole_width = 12;
+//snapfit_hole_thickness = 6;
+//snapfit_hole_height = 3;
+//snapfit_hole_offset = 4; //4mm from top
+
+//Values for snap fit mechanism
+triangle_mount_base = 3;
+triangle_mount_length = 14;
+triangle_mount_dist_from_top = 1;
+
 
 //CALCULATED VALUES
 //add margin so board is not pressed tight
@@ -71,21 +77,25 @@ translate([0, 0, 0]) union()
         // USB cutout, placed in the center starting at floor height
         translate([-0.5, width_full/2 - usb_width/2, bottom_thickness]) cube([wall_thickness*3,  usb_width, usb_height+0.5]);
         
-        //snapfit cutouts
-        generate_snapfit_holes();
-        
         //button holes
         generate_button_holes();
         
         //vent holes
         generate_rectangular_vent_holes();
         
-        //todo: inner snap fit holding plate holes/structure
-        //(a plate that will snap in place above the board to securely hold it in
-        //possibly better just to have long posts coming out of lid
+        //inner snap fit holes
+        translate([0,0,height_full-triangle_mount_dist_from_top-triangle_mount_base]) generate_snapfit_holes(3, triangle_mount_length);
+    translate([0,width_full,height_full-triangle_mount_dist_from_top-triangle_mount_base]) mirror([0,1,0]) generate_snapfit_holes(3, triangle_mount_length);
+        
+        //holes for more easily removing the snapfit lid
+        translate([length_full/6*2 - 5,0,height_full-3]) cube([10, wall_thickness*2,3]);    
+        translate([length_full/6*2 - 5,width_full-wall_thickness,height_full-3]) cube([10, wall_thickness*2, 3]);
+        translate([length_full/6*4 - 5,0,height_full-3]) cube([10, wall_thickness*2,3]);    
+        translate([length_full/6*4 - 5,width_full-wall_thickness,height_full-3]) cube([10, wall_thickness*2, 3]);
         
         
     }
+   
     
     //corner posts
     generate_posts();
@@ -168,8 +178,8 @@ module generate_posts()
 
 module generate_inner_wall()
 {
-   triangle_length = inner_width / 6;
-   triangle_height = height_full - snapfit_hole_height - snapfit_hole_offset/2 - inner_wall_height - bottom_thickness;
+   triangle_length = inner_width / 3;
+   triangle_height = height_full - triangle_mount_dist_from_top - triangle_mount_base - inner_wall_height - bottom_thickness;
     
    translate([inner_length+10, wall_thickness, 0]) union()
    {   
@@ -187,34 +197,34 @@ module generate_inner_wall()
 }
 
 //6 1cm holes, 3 on each side
-module generate_snapfit_holes()
-{
-    
-    hole_width = snapfit_hole_width;
-    hole_thickness = snapfit_hole_thickness;
-    hole_height = snapfit_hole_height;
-    hole_offset = snapfit_hole_offset;
-    
-    //put holes at 10, 45, 90%
-    hole_y_offset = -1*hole_thickness/2;
-    base_x_offset = wall_thickness + 0.10*inner_length_full;
-    
-    hole_z_offset = height_full - hole_height - hole_offset; //4mm from top
-    
-    //along y axis
-    gen_hole_line();
-    //along far y wall
-    translate([0, width_full, 0]) gen_hole_line();
-    
-    
-    module gen_hole_line()
-    {
-        translate([base_x_offset, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]); 
-        translate([base_x_offset + inner_length_full*0.35, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]);
-        translate([base_x_offset + inner_length_full*0.7, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]);
-    }
-    
-}
+//module generate_snapfit_holes()
+//{
+//    
+//    hole_width = snapfit_hole_width;
+//    hole_thickness = snapfit_hole_thickness;
+//    hole_height = snapfit_hole_height;
+//    hole_offset = snapfit_hole_offset;
+//    
+//    //put holes at 10, 45, 90%
+//    hole_y_offset = -1*hole_thickness/2;
+//    base_x_offset = wall_thickness + 0.10*inner_length_full;
+//    
+//    hole_z_offset = height_full - hole_height - hole_offset; //4mm from top
+//    
+//    //along y axis
+//    gen_hole_line();
+//    //along far y wall
+//    translate([0, width_full, 0]) gen_hole_line();
+//    
+//    
+//    module gen_hole_line()
+//    {
+//        translate([base_x_offset, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]); 
+//        translate([base_x_offset + inner_length_full*0.35, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]);
+//        translate([base_x_offset + inner_length_full*0.7, hole_y_offset, hole_z_offset]) cube([hole_width, hole_thickness, hole_height]);
+//    }
+//    
+//}
 
 module generate_button_holes()
 {
@@ -237,13 +247,13 @@ module generate_button_holes()
 module generate_rectangular_vent_holes()
 {
     //closer wall
-    translate([length_full * 3/5 + 2, -2 , bottom_thickness+1]) generate_vent_line(5, 18, 4, 5, 4.5);
+    translate([length_full * 3/5 + 2, -2 , bottom_thickness+5]) generate_vent_line(5, 16, 4, 5, 4.5);
     
     //far wall
-    translate([length_full * 3/5 + 2, width_full-2, bottom_thickness+1]) generate_vent_line(5, 18, 4, 5, 4.5);
+    translate([length_full * 3/5 + 2, width_full-2, bottom_thickness+5]) generate_vent_line(5, 16, 4, 5, 4.5);
     
     //far wall
-    translate([length_full+2, (width_full - total_vent_line_length(6, 2, 3))/2, bottom_thickness+1]) rotate([0,0,90]) generate_vent_line(6, 20, 2, 5, 4.5);
+    translate([length_full+2, (width_full - total_vent_line_length(6, 2, 3))/2, bottom_thickness+5]) rotate([0,0,90]) generate_vent_line(6, 18, 2, 5, 4.5);
     
     //bottom of sensor bay
     translate([length_full - total_vent_line_length(8, 2, 3) - 10, (width_full-24)/2, bottom_thickness+1]) rotate([-90,0,0]) generate_vent_line(7, 24, 2, 5, 4.5);
@@ -290,6 +300,23 @@ module generate_hook()
     }
 }
 
+module generate_snapfit_holes(count, length)
+{
+    interval = length_full / 2 / count;
+    
+    //left side
+    for(i = [0:count-1])
+    {
+        translate([2*i*interval + interval, width_full/2, 0]) snapfit_hole();
+    }
+    
+    module snapfit_hole()
+    {
+        
+        translate([0,-width_full/2+wall_thickness, 0]) triangle_mount(triangle_mount_base, wall_thickness/2, length);
+    }
+    
+}
 
 //from https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron
 //makes 3D triangles
@@ -300,3 +327,28 @@ module prism(l, w, h){
            );
   
    }
+   
+   
+//from https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron
+//makes 3D triangles
+module prism_isos(l, w, h){
+   polyhedron(
+           points=[[0,0,0], [l,0,0], [l,w,0], [0,w,0], [0,w/2,h], [l,w/2,h]],
+           faces=[[0,1,2,3],[5,4,3,2],[0,4,5,1],[0,3,4],[5,2,1]]
+           );
+  
+}
+
+module triangle_mount(base, height, length)
+{
+    translate([-length/2,0,base/2]) rotate([90,0,0]) union(){
+        //triangle portion
+        //rotate([90,0,-90]) 
+        translate([0,-base/2,0]) prism_isos(length,base,height);
+        
+        //rectangular support
+        //rotate([0,90,0])
+        //translate([-length/2,0,base]) 
+        translate([length/2,0,-base/2]) cube([length,base,base], center=true);
+    }
+}
